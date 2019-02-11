@@ -198,6 +198,12 @@ func (e *Epub) AddImage(source string, imageFilename string) (string, error) {
 	return addMedia(source, imageFilename, imageFileFormat, ImageFolderName, e.images)
 }
 
+// AddCover adds a new section named cover.xhtml, meant to hold a cover page.
+// This should be called before other AddSection calls.
+func (e *Epub) AddCover(body, internalCSSPath string) (string, error) {
+	return e.AddSection(body, "", "cover.xhtml", internalCSSPath)
+}
+
 // AddSection adds a new section (chapter, etc) to the EPUB and returns a
 // relative path to the section that can be used from another section (for
 // links).
