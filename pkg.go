@@ -106,9 +106,11 @@ type pkgMetadata struct {
 	// Ex: <dc:title>Your title here</dc:title>
 	Title string `xml:"dc:title"`
 	// Ex: <dc:language>en</dc:language>
-	Language string `xml:"dc:language"`
-	Creator  *pkgCreator
-	Meta     []pkgMeta `xml:"meta"`
+	Language    string `xml:"dc:language"`
+	Description string `xml:"dc:description"`
+	Date        string `xml:"dc:date"`
+	Creator     *pkgCreator
+	Meta        []pkgMeta `xml:"meta"`
 }
 
 // The <spine> element
@@ -203,6 +205,10 @@ func (p *pkg) setModified(timestamp string) {
 
 func (p *pkg) setTitle(title string) {
 	p.xml.Metadata.Title = title
+}
+
+func (p *pkg) setDesc(desc string) {
+	p.xml.Metadata.Description = desc
 }
 
 // Update the <meta> element

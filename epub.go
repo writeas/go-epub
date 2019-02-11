@@ -98,6 +98,7 @@ img {
 // Epub implements an EPUB file.
 type Epub struct {
 	author string
+	desc   string
 	cover  *epubCover
 	// The key is the css filename, the value is the css source
 	css map[string]string
@@ -386,6 +387,12 @@ func (e *Epub) SetTitle(title string) {
 	e.title = title
 	e.pkg.setTitle(title)
 	e.toc.setTitle(title)
+}
+
+// SetDesc sets the language of the EPUB.
+func (e *Epub) SetDesc(desc string) {
+	e.desc = desc
+	e.pkg.setDesc(desc)
 }
 
 // Title returns the title of the EPUB.
