@@ -98,7 +98,6 @@ img {
 // Epub implements an EPUB file.
 type Epub struct {
 	author string
-	desc   string
 	cover  *epubCover
 	// The key is the css filename, the value is the css source
 	css map[string]string
