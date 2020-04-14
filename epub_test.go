@@ -17,6 +17,7 @@ import (
 )
 
 const (
+	// Set this to false to not delete the generated test EPUB file
 	doCleanup             = true
 	testAuthorTemplate    = `<dc:creator id="creator">%s</dc:creator>`
 	testContainerContents = `<?xml version="1.0" encoding="UTF-8"?>
@@ -48,12 +49,16 @@ const (
 	testEpubLang              = "fr"
 	testEpubPpd               = "rtl"
 	testEpubTitle             = "My title"
+	testEpubDescription       = "My description"
+	testFontCSSFilename       = "font.css"
+	testFontCSSSource         = "testdata/font.css"
 	testFontFromFileSource    = "testdata/redacted-script-regular.ttf"
 	testIdentifierTemplate    = `<dc:identifier id="pub-id">%s</dc:identifier>`
 	testImageFromFileFilename = "testfromfile.png"
 	testImageFromFileSource   = "testdata/gophercolor16x16.png"
 	testImageFromURLSource    = "https://golang.org/doc/gopher/gophercolor16x16.png"
 	testLangTemplate          = `<dc:language>%s</dc:language>`
+	testDescTemplate          = `<dc:description>%s</dc:description>`
 	testPpdTemplate           = `page-progression-direction="%s"`
 	testMimetypeContents      = "application/epub+zip"
 	testPkgContentTemplate    = `<?xml version="1.0" encoding="UTF-8"?>
@@ -494,6 +499,39 @@ func TestEpubTitle(t *testing.T) {
 	cleanup(testEpubFilename, tempDir)
 }
 
+func TestEpubDescription(t *testing.T) {
+	e := NewEpub(testEpubTitle)
+	e.SetDescription(testEpubDescription)
+
+	if e.Description() != testEpubDescription {
+		t.Errorf(
+			"Description doesn't match\n"+
+				"Got: %s\n"+
+				"Expected: %s",
+			e.Lang(),
+			testEpubDescription)
+	}
+
+	tempDir := writeAndExtractEpub(t, e, testEpubFilename)
+
+	contents, err := ioutil.ReadFile(filepath.Join(tempDir, contentFolderName, pkgFilename))
+	if err != nil {
+		t.Errorf("Unexpected error reading package file: %s", err)
+	}
+
+	testLangElement := fmt.Sprintf(testDescTemplate, testEpubDescription)
+	if !strings.Contains(string(contents), testLangElement) {
+		t.Errorf(
+			"Description doesn't match\n"+
+				"Got: %s"+
+				"Expected: %s",
+			contents,
+			testLangElement)
+	}
+
+	cleanup(testEpubFilename, tempDir)
+}
+
 func TestEpubIdentifier(t *testing.T) {
 	e := NewEpub(testEpubTitle)
 	e.SetIdentifier(testEpubIdentifier)
@@ -587,16 +625,21 @@ func TestUnableToCreateEpubError(t *testing.T) {
 
 func TestEpubValidity(t *testing.T) {
 	e := NewEpub(testEpubTitle)
-	testCSSPath, _ := e.AddCSS(testCoverCSSSource, testCoverCSSFilename)
+	testCoverCSSPath, _ := e.AddCSS(testCoverCSSSource, testCoverCSSFilename)
 	e.AddCSS(testCoverCSSSource, "")
+	e.AddSection(testSectionBody, testSectionTitle, testSectionFilename, testCoverCSSPath)
+
 	e.AddFont(testFontFromFileSource, "")
-	e.AddSection(testSectionBody, testSectionTitle, testSectionFilename, testCSSPath)
+	// Add CSS referencing the font in order to validate the font MIME type
+	testFontCSSPath, _ := e.AddCSS(testFontCSSSource, testFontCSSFilename)
+	e.AddSection(testSectionBody, "", "", testFontCSSPath)
+
 	testImagePath, _ := e.AddImage(testImageFromFileSource, testImageFromFileFilename)
 	e.AddImage(testImageFromFileSource, testImageFromFileFilename)
 	e.AddImage(testImageFromURLSource, "")
-	e.AddSection(testSectionBody, "", "", "")
 	e.SetAuthor(testEpubAuthor)
 	e.SetCover(testImagePath, "")
+	e.SetDescription(testEpubDescription)
 	e.SetIdentifier(testEpubIdentifier)
 	e.SetLang(testEpubLang)
 	e.SetPpd(testEpubPpd)
@@ -698,8 +741,8 @@ func unzipFile(sourceFilePath string, destDirPath string) error {
 
 // This function requires epubcheck to work (https://github.com/IDPF/epubcheck)
 //
-//     wget https://github.com/IDPF/epubcheck/releases/download/v4.0.1/epubcheck-4.0.1.zip
-//     unzip epubcheck-4.0.1.zip
+//     wget https://github.com/w3c/epubcheck/releases/download/v4.2.2/epubcheck-4.2.2.zip
+//     unzip epubcheck-4.2.2.zip
 func validateEpub(t *testing.T, epubFilename string) ([]byte, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
